@@ -1,17 +1,55 @@
-from pathlib import Path
+from fastapi.testclient import TestClient
+from src.deployment import app as app_module
 
-def test_model_file_exists(config):
-    model_dir = Path(config["paths"]["model_dir"])
-    model_file = model_dir / "random_forest_pipeline.pkl"
-    assert model_file.exists(), f"Model file {model_file} invalid or missing."
 
-def test_model_can_predict(model):
-    sample_data = {
-        'daily_screen_time_min': [150],
-        'notification_count': [120],
-        'social_media_time_min': [90],
-        'mood_score': [7],
+class DummyModel:
+    def __init__(self, predicted_value: int):
+        self.predicted_value = predicted_value
+
+    def predict(self, _):
+        return [self.predicted_value]
+
+
+def test_prediction_endpoint_returns_low_anxiety(monkeypatch):
+    monkeypatch.setattr(app_module, "model_pipeline", DummyModel(predicted_value=1))
+    client = TestClient(app_module.app)
+
+    payload = {
+        "daily_screen_time_min": 150.0,
+        "notification_count": 120,
+        "social_media_time_min": 90.0,
     }
+    response = client.post("/predictions", json=payload)
 
-    prediction = model.predict(sample_data)
-    assert len(prediction) == 1, "The prediction failed."
+    assert response.status_code == 200
+    assert response.json()["prediction"] == "Your anxiety levels are low"
+
+
+def test_prediction_endpoint_returns_high_anxiety(monkeypatch):
+    monkeypatch.setattr(app_module, "model_pipeline", DummyModel(predicted_value=0))
+    client = TestClient(app_module.app)
+
+    payload = {
+        "daily_screen_time_min": 240.0,
+        "notification_count": 320,
+        "social_media_time_min": 180.0,
+    }
+    response = client.post("/predictions", json=payload)
+
+    assert response.status_code == 200
+    assert response.json()["prediction"] == "Your anxiety levels are high"
+
+
+def test_prediction_returns_503_if_model_not_loaded(monkeypatch):
+    monkeypatch.setattr(app_module, "model_pipeline", None)
+    client = TestClient(app_module.app)
+
+    payload = {
+        "daily_screen_time_min": 140.0,
+        "notification_count": 90,
+        "social_media_time_min": 70.0,
+    }
+    response = client.post("/predictions", json=payload)
+
+    assert response.status_code == 503
+    assert "Model unavailable" in response.json()["detail"]

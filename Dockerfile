@@ -18,6 +18,7 @@ RUN mkdir -p data/processed
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
 
 EXPOSE 8000
-CMD ["python", "-m", "uvicorn", "src.deployment.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "python -m uvicorn src.deployment.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
