@@ -16,3 +16,5 @@ models/*
 *.tmp
 *.pkl
 *.h5
+!models/.gitkeep
+!models/random_forest_anxiety_level_pipeline.pkl
