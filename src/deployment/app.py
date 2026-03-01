@@ -3,7 +3,8 @@ from typing import Optional
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.utils.config import load_config
@@ -35,19 +36,24 @@ app = FastAPI(
     version="1.0.0",
     description=(
         "API to estimate anxiety levels based on digital behavior patterns. "
-        "Includes health and prediction endpoints for Railway deployment."
+        "This demo exposes only the prediction endpoint through Swagger Docs."
     ),
     contact={"name": "AnxAI Team"},
     openapi_tags=[
-        {
-            "name": "health",
-            "description": "API status check and model availability validation.",
-        },
         {
             "name": "predictions",
             "description": "Anxiety-level prediction from digital usage metrics.",
         },
     ],
+)
+
+# Restrictive CORS: rejects browser requests from all cross-origins.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[],
+    allow_credentials=False,
+    allow_methods=[],
+    allow_headers=[],
 )
 
 
@@ -90,23 +96,17 @@ class PredictionResponse(BaseModel):
     )
 
 
-@app.get("/", tags=["health"], summary="Welcome message")
-def read_root():
-    return {"message": "AnxAI API is running. Visit /docs to explore endpoints."}
+def docs_only_guard(request: Request) -> None:
+    referer = request.headers.get("referer", "")
+    host = request.headers.get("host", "").lower()
+    referer_lower = referer.lower()
 
-
-@app.get(
-    "/health",
-    tags=["health"],
-    summary="API status",
-    description="Checks whether the API is responding and whether the model is loaded.",
-)
-def health_check():
-    return {
-        "status": "ok",
-        "model_loaded": model_pipeline is not None,
-        "docs_url": "/docs",
-    }
+    # Demo safeguard: allows browser calls only when triggered from Swagger Docs.
+    if "/docs" not in referer_lower or (host and host not in referer_lower):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden. Use Swagger Docs at /docs to execute this endpoint.",
+        )
 
 
 @app.post(
@@ -118,7 +118,10 @@ def health_check():
         "Receives digital behavior metrics and returns a low- or high-anxiety prediction."
     ),
 )
-def predict_habit(payload: PredictionPayload):
+def predict_habit(
+    payload: PredictionPayload,
+    _: None = Depends(docs_only_guard),
+):
     if model_pipeline is None:
         raise HTTPException(
             status_code=503,

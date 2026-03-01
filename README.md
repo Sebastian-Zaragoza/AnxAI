@@ -16,17 +16,16 @@ The purpose of AnxAI is to provide a simple, documented, and testable inference 
 
 ## API Endpoints
 
-- `GET /`  
-  Welcome message and quick docs pointer.
-
-- `GET /health`  
-  Service status and model availability (`model_loaded`).
-
 - `POST /predictions`  
   Anxiety prediction based on:
   - `daily_screen_time_min`
   - `notification_count`
   - `social_media_time_min`
+
+Security behavior for this demo:
+
+- Requests to `POST /predictions` are accepted only when triggered from Swagger Docs (`/docs`) in a browser context.
+- Direct calls without a `/docs` referer are rejected with `403`.
 
 ## Interactive Swagger Documentation
 

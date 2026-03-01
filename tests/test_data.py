@@ -3,23 +3,18 @@ from fastapi.testclient import TestClient
 from src.deployment.app import app
 
 
-def test_root_endpoint_available():
+def test_root_endpoint_removed():
     client = TestClient(app)
     response = client.get("/")
 
-    assert response.status_code == 200
-    assert "AnxAI API is running" in response.json()["message"]
+    assert response.status_code == 404
 
 
-def test_health_endpoint_available():
+def test_health_endpoint_removed():
     client = TestClient(app)
     response = client.get("/health")
 
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["status"] == "ok"
-    assert "model_loaded" in payload
-    assert payload["docs_url"] == "/docs"
+    assert response.status_code == 404
 
 
 def test_swagger_docs_and_openapi_available():
@@ -30,4 +25,8 @@ def test_swagger_docs_and_openapi_available():
 
     assert docs_response.status_code == 200
     assert schema_response.status_code == 200
-    assert "paths" in schema_response.json()
+    schema = schema_response.json()
+    assert "paths" in schema
+    assert "/predictions" in schema["paths"]
+    assert "/" not in schema["paths"]
+    assert "/health" not in schema["paths"]
