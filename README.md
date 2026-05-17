@@ -9,10 +9,10 @@ This project is backend-only (API-first) and is ready for deployment on **Railwa
 
 The purpose of AnxAI is to provide a simple, documented, and testable inference service that:
 
-- receives digital behavior features,
-- runs a trained ML pipeline,
-- returns an anxiety-level prediction,
-- can be integrated by web/mobile clients or other backend services.
+- Receives digital behavior features,
+- Runs a trained ML pipeline,
+- Returns an anxiety-level prediction,
+- Can be integrated by web/mobile clients or other backend services.
 
 ## API Endpoints
 
